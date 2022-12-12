@@ -3,12 +3,17 @@ on: [push]
 jobs:
   production-deploy:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        k8s: [v1.23.13, v1.24.7, v1.25.3]
     steps:
       - uses: actions/checkout@v3
         #- uses: actions/setup-node@v3
         #  with:
         #    node-version: '16'
         #- run: node --version
-      - run: kind --version
-      - run: kind create cluster --image="kindest/node:v1.23.13"
-      - run: kubectl cluster-info
+      - name: Create Kubernetes ${{ matrix.k8s }} cluster
+        id: kind
+        run: |
+          kind create cluster --image=kindest/node:${{ matrix.k8s }}
+          kubectl cluster-info
