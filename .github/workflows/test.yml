@@ -10,3 +10,5 @@ jobs:
         #    node-version: '16'
         #- run: node --version
       - run: kind --version
+      - run: kind create cluster --image="kindest/node:v1.23.13"
+      - run: kubectl cluster-info
