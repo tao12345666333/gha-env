@@ -3,6 +3,16 @@ entries:
   charts:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2022-12-27T08:21:32.953581748Z"
+    description: A Helm chart for Kubernetes
+    digest: 02dfe1a2880e6637b7d265971b245ded35dd0675d36380729147c4ea3c3e31e1
+    name: charts
+    type: application
+    urls:
+    - https://github.com/tao12345666333/gha-env/releases/download/charts-1.1.0/charts-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2022-12-27T08:11:33.229493419Z"
     description: A Helm chart for Kubernetes
     digest: 7ac8267ab694235be52e352979125bdbc06aab02017a61a47d8806c3b702bd92
@@ -31,4 +41,4 @@ entries:
     urls:
     - https://github.com/tao12345666333/gha-env/releases/download/charts-0.2.0/charts-0.2.0.tgz
     version: 0.2.0
-generated: "2022-12-27T08:14:43.265405767Z"
+generated: "2022-12-27T08:21:32.953597748Z"
