@@ -7,7 +7,7 @@
 # the passed step is the same as the passed job in the main workflow
 
 on:
-  push:
+  workflow_call:
 
 jobs:
   check-out:
