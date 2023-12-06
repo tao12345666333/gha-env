@@ -1,0 +1,27 @@
+# this workflow is included in the main workflow
+# it will be triggered when the main workflow is triggered
+# it includes two steps
+# 1. checkout
+# 2. passed
+# the checkout step is the same as the main workflow
+# the passed step is the same as the passed job in the main workflow
+
+on:
+  push:
+
+jobs:
+  check-out:
+    name: Check out
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+  passed:
+    name: Passed
+    runs-on: ubuntu-latest
+    needs: [check-out]
+    steps:
+      - name: Passed
+        run: |
+          echo "Passed"
