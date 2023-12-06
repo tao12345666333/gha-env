@@ -55,6 +55,7 @@ jobs:
     needs: [update-to-date, setup-go, install-dependencies, check-version]
     if: always()
     steps:
-      - name: Passed
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
-          echo "Passed"
+          echo "Some jobs failed or were cancelled."
+          exit 1
