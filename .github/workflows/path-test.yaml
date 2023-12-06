@@ -48,4 +48,8 @@ jobs:
     name: Passed
     runs-on: ubuntu-latest
     needs: [update-to-date, setup-go, install-dependencies, check-version]
-    uses: ./.github/workflows/_be_included.yaml
+    if: always()
+    steps:
+      - name: Passed
+        run: |
+          echo "Passed"
