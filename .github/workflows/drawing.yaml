@@ -1,0 +1,20 @@
+name: Drawing chart
+
+on: [push, pull_request]
+
+jobs:
+  drawing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+      - name: install uplot
+        run: |
+          gem install youplot
+
+      - name: drawing
+        run: |
+          uplot bar -d " " --title "Performance test for KIC" --ylabel="number of resources" --xlabel="time(s) cost for all routes to take effect." results.txt "
