@@ -1,4 +1,4 @@
 import random
 
-def random_fun():
+def get_random():
     return random.random()
