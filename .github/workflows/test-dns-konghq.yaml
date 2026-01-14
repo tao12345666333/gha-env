@@ -1,0 +1,158 @@
+name: Test DNS Resolution for charts.konghq.com
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test-charts-dns
+
+jobs:
+  test-dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check system DNS configuration
+        run: |
+          echo "=== /etc/resolv.conf ==="
+          cat /etc/resolv.conf
+          echo ""
+          echo "=== /etc/hosts ==="
+          cat /etc/hosts
+          echo ""
+          echo "=== Network interfaces ==="
+          ip addr show
+          echo ""
+          echo "=== Default gateway ==="
+          ip route show default
+
+      - name: Install diagnostic tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dnsutils traceroute mtr-tiny netcat-openbsd
+
+      - name: Test DNS resolution with multiple methods
+        run: |
+          TARGET_DOMAIN="charts.konghq.com"
+          echo "=== Testing DNS resolution for: $TARGET_DOMAIN ==="
+          echo ""
+
+          echo "--- Method 1: getent hosts ---"
+          getent hosts $TARGET_DOMAIN || echo "getent failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 2: host command ---"
+          host $TARGET_DOMAIN || echo "host command failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 3: nslookup ---"
+          nslookup $TARGET_DOMAIN || echo "nslookup failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 4: dig (default resolver) ---"
+          dig $TARGET_DOMAIN +trace +all || echo "dig failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 5: dig with Google DNS (8.8.8.8) ---"
+          dig @8.8.8.8 $TARGET_DOMAIN || echo "dig @8.8.8.8 failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 6: dig with Cloudflare DNS (1.1.1.1) ---"
+          dig @1.1.1.1 $TARGET_DOMAIN || echo "dig @1.1.1.1 failed with exit code: $?"
+          echo ""
+
+          echo "--- Method 7: dig with Quad9 DNS (9.9.9.9) ---"
+          dig @9.9.9.9 $TARGET_DOMAIN || echo "dig @9.9.9.9 failed with exit code: $?"
+          echo ""
+
+      - name: Test HTTPS connectivity
+        run: |
+          TARGET_URL="https://charts.konghq.com"
+          echo "=== Testing HTTPS connectivity to: $TARGET_URL ==="
+          echo ""
+
+          echo "--- curl with verbose output ---"
+          curl -v --connect-timeout 30 --max-time 60 $TARGET_URL 2>&1 | head -100 || echo "curl failed with exit code: $?"
+          echo ""
+
+          echo "--- curl DNS resolution timing ---"
+          curl -w "DNS Lookup: %{time_namelookup}s\nConnect: %{time_connect}s\nTLS Handshake: %{time_appconnect}s\nTotal: %{time_total}s\nHTTP Code: %{http_code}\n" \
+               -o /dev/null -s --connect-timeout 30 --max-time 60 $TARGET_URL || echo "curl timing failed with exit code: $?"
+          echo ""
+
+      - name: Test TCP connectivity
+        run: |
+          TARGET_DOMAIN="charts.konghq.com"
+          echo "=== Testing TCP connectivity ==="
+          echo ""
+
+          echo "--- Port 443 (HTTPS) ---"
+          timeout 30 nc -zv $TARGET_DOMAIN 443 2>&1 || echo "nc port 443 failed with exit code: $?"
+          echo ""
+
+          echo "--- Port 80 (HTTP) ---"
+          timeout 30 nc -zv $TARGET_DOMAIN 80 2>&1 || echo "nc port 80 failed with exit code: $?"
+          echo ""
+
+      - name: Test network path
+        run: |
+          TARGET_DOMAIN="charts.konghq.com"
+          echo "=== Testing network path to: $TARGET_DOMAIN ==="
+          echo ""
+
+          echo "--- traceroute ---"
+          traceroute -m 20 $TARGET_DOMAIN 2>&1 || echo "traceroute failed with exit code: $?"
+          echo ""
+
+          echo "--- mtr report ---"
+          mtr --report --report-cycles 5 $TARGET_DOMAIN 2>&1 || echo "mtr failed with exit code: $?"
+          echo ""
+
+      - name: Test helm repo add with timeout and debug
+        run: |
+          echo "=== Installing Helm ==="
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          echo ""
+
+          echo "=== Helm version ==="
+          helm version
+          echo ""
+
+          echo "=== Testing helm repo add with debug ==="
+          echo "Start time: $(date)"
+          
+          timeout 120 helm repo add kong https://charts.konghq.com --debug 2>&1 || {
+            EXIT_CODE=$?
+            echo ""
+            echo "helm repo add failed or timed out with exit code: $EXIT_CODE"
+            echo "End time: $(date)"
+          }
+          
+          echo ""
+          echo "=== Helm repo list ==="
+          helm repo list || echo "No repos configured"
+
+      - name: Compare with other helm repos
+        run: |
+          echo "=== Testing other helm repos for comparison ==="
+          echo ""
+
+          echo "--- bitnami repo ---"
+          timeout 60 helm repo add bitnami https://charts.bitnami.com/bitnami --debug 2>&1 || echo "bitnami repo add failed with exit code: $?"
+          echo ""
+
+          echo "--- ingress-nginx repo ---"
+          timeout 60 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx --debug 2>&1 || echo "ingress-nginx repo add failed with exit code: $?"
+          echo ""
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Test Summary ==="
+          echo "Timestamp: $(date -u)"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner Arch: $RUNNER_ARCH"
+          echo ""
+          echo "If DNS resolution failed, consider:"
+          echo "1. Using alternative DNS servers (8.8.8.8, 1.1.1.1)"
+          echo "2. Adding manual /etc/hosts entry"
+          echo "3. Using direct IP address if available"
+          echo "4. Checking if the domain is temporarily down"
